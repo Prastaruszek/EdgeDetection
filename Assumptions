@@ -2,7 +2,10 @@ PROJEKT Z WSPÓŁBIEŻNYCH
 
 Implementacja wybranego algorytmu edge detection
 Napisanie UI (okienko/przyciski)
-
+Wczytywanie obrazka za pomocą biblioteki lodepng
+http://madsravn.dk/posts/simple-image-processing-with-cuda/
+lub libjpg
+http://stackoverflow.com/questions/694080/how-do-i-read-jpeg-and-png-pixels-in-c-on-linux
 DODATKOWO
 
 Obraz z kamery
