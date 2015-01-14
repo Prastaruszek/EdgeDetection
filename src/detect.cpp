@@ -11,7 +11,7 @@ void displayMeOnTheScreen(CImg<T> image){
 //make detect - w katalogu matce zbuduje nam glowny program. Mozna jeszcze zobaczyc
 //calkiem ciekawy przyklad - make example - ale tu cos bardziej pod nasze potrzeby
 int main() {
-	CImg<unsigned char> image("images/lena512_color.bmp");
+	CImg<unsigned char> image("images/lady_color.bmp");
 
 	printf("width=%d hight=%d depth=%d size=%lu spectrum=%d\n",image.width(), 
 					image.height(), image.depth(), image.size(),
