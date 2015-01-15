@@ -14,13 +14,9 @@ void displayMeOnTheScreen(CImg<T> image){
 //calkiem ciekawy przyklad - make example - ale tu cos bardziej pod nasze potrzeby
 int main() {
 	CImg<unsigned char> image("images/lady_color.bmp");
-
-	printf("width=%d hight=%d depth=%d size=%lu spectrum=%d\n",image.width(), 
-					image.height(), image.depth(), image.size(),
-									image.spectrum());;
-	//for(int i=0; i<image.size(); ++i){
-	
-	//}
+	printf("width=%d hight=%d depth=%d size=%lu spectrum=%d\n",
+				image.width(), image.height(), image.depth(),
+								image.size(), image.spectrum());;
 	unsigned char* red = image.data(0,0,0,0);
 	unsigned char* grey = image.data(0,0,0,1);
 	unsigned char* blue = image.data(0,0,0,2);

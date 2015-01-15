@@ -2,14 +2,21 @@ PROJEKT Z WSPÓŁBIEŻNYCH
 
 Implementacja wybranego algorytmu edge detection
 Napisanie UI (okienko/przyciski)
-Wczytywanie obrazka za pomocą biblioteki lodepng
-http://madsravn.dk/posts/simple-image-processing-with-cuda/
-lub libjpg
-http://stackoverflow.com/questions/694080/how-do-i-read-jpeg-and-png-pixels-in-c-on-linux
-Tak jak teraz na to patrzę, to dość prosta i intuicyjna wydaje się CImg.
-http://cimg.sourceforge.net/reference/index.html
 
+CImg to fajna biblioteczka. Jej plusy to:
+- proste Api. Łatwo się zorientować co jest czym
+- podstawowa wersja jest zawarta w jednym pliku nagłówkowym (to co teraz jest 2Mb ale można wziąć starszą wersję).
+- jest zintegrowana z openCV - jakbyśmy chcieli rozbudować to kiedyś, korzystając np. z kamerki to można.
+minus:
+- jako że to jeden plik nagłówkowy, więc długo sie kompiluje. Uważam to jednak za minus do obejścia - wczytywać i wyświetlać
+na ekranie (ew. zapisywać) będziemy w jednym pliku, który niewiele się zmieni, więc ta długa kompilacja jest jednorazowa.
 
+http://cimg.sourceforge.net/reference/group__cimg__storage.html
+
+ssh -X do miracla i spokojnie można korzystać z funkcji do wyświetlania obrazków.
+
+Ogólnie to do funkcji process w pliku processImg.cpp przekazuje obrazek jako tablice unsigned charów. Gdzie jeden u_char 
+to liczba 0-256 określająca nasycenie kolorów (bo to zdaje się nam potrzeba i tylko to).
 
 DODATKOWO
 
