@@ -7,6 +7,7 @@ void process(unsigned char* src, unsigned char* dst, int width, int height){
 	std::cout << "COPYING" << std::endl;
 	int magX;
 	int magY;
+	//simple 1D mask
 	for(int i=1; i<height-1; ++i){
 		for(int j=1; j<width-1; ++j){
 			magX = -src[(i)*width+j-1]+src[i*width+j+1];
