@@ -10,8 +10,6 @@ void displayMeOnTheScreen(CImg<T> image){
 	while (!main_disp.is_closed());
 	main_disp.wait();
 }
-//make detect - w katalogu matce zbuduje nam glowny program. Mozna jeszcze zobaczyc
-//calkiem ciekawy przyklad - make example - ale tu cos bardziej pod nasze potrzeby
 
 void getGrayscaleImage(CImg<unsigned char>& image, unsigned char* grayscale){
 	int size = image.size()/image.spectrum();
@@ -22,6 +20,7 @@ void getGrayscaleImage(CImg<unsigned char>& image, unsigned char* grayscale){
 		}
 	}
 	else if(image.spectrum()==3){
+		//to mozna zrobic w cudzie, jest to dosc trywialne, ale poki co zostawmy
 		unsigned char* red = image.data(0,0,0,0);
 		unsigned char* grey = image.data(0,0,0,1);
 		unsigned char* blue = image.data(0,0,0,2);
