@@ -1,9 +1,8 @@
 #include "filters.h"
 
 
-SobelFilter::SobelFilter(unsigned char* img, int width, int height):img(img), 
-							width(width), height(height){}
-							
+SobelFilter::SobelFilter(unsigned char* img, int width, int height):
+						Filter(img,width,height,nullptr){}
 void SobelFilter::filter(unsigned char* dst){
 	int magX;
 	int magY;

@@ -29,7 +29,8 @@ Zadania do 17 stycznia
 CUDA
 Algorithm Canny Edge Detection Filter
 1.1 Gaussian Smoothing
-1.2 Gradient Computation (SOBOL) 
+1.2 Gradient Computation (1D - SOBOL) 
+a efekt jest i tak dobry (tak teraz to dziala)
 1.3 Non-Maximum Supression (CANNY)
 1.4 Histeresis
 
