@@ -10,6 +10,9 @@ SobelFilter::SobelFilter(Filter* another): Filter(another->getImg(),
 				another->getWidth(),another->getHeight(),another){}
 				
 void SobelFilter::filter(unsigned char* dst){
+	if(another!=nullptr){
+		another->filter(dst);
+	}
 	int magX;
 	int magY;
 	for(int i=1; i<height-1; ++i){
