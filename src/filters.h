@@ -9,6 +9,9 @@ public:
 							width(width), height(height), 
 							another(another){}
 	virtual void filter(unsigned char* dst) = 0;  
+	unsigned char* getImg(){return img;}
+	int getWidth(){return width;}
+	int getHeight(){return height;}
 protected:
 	Filter* another;
 	unsigned char* img;
