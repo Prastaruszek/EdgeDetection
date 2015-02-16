@@ -33,11 +33,11 @@ void getGrayscaleImage(CImg<unsigned char>& image, unsigned char* grayscale){
 	}
 }
 int main(int argc, char* argv[]) {
-	char img[50];
+	char img[50]; 
 	if(argc>1){
 		strncpy(img, "images/", 50);
 		strncpy(img+7, argv[1], 43);
-	}
+	} 
 	else{
 		strncpy(img, "images/lady_color.bmp", 50);
 	}

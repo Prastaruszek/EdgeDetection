@@ -14,14 +14,14 @@ public:
 	int getHeight(){return height;}
 	static void initCuda(){
 		cuInit(0);
-		CUdevice cuDevice;
+		CUdevice cuDevice; 
 		CUresult res = cuDeviceGet(&cuDevice, 0);
-		if (res != CUDA_SUCCESS){
+		if (res != CUDA_SUCCESS){ 
 			exit(1);
 		}
 
 		CUcontext cuContext;
-		res = cuCtxCreate(&cuContext,CU_CTX_SCHED_SPIN | CU_CTX_MAP_HOST, cuDevice);
+		res = cuCtxCreate(&cuContext,0, cuDevice);
 		if (res != CUDA_SUCCESS){
 			exit(1);
 		}
