@@ -5,11 +5,11 @@
 class Filter
 {
 public:
-	Filter(unsigned char* img, int width, int height, Filter* another):img(img), 
+	Filter(int* img, int width, int height, Filter* another):img(img), 
 							width(width), height(height), 
 							another(another){}
-	virtual void filter(unsigned char* dst) = 0;  
-	unsigned char* getImg(){return img;}
+	virtual void filter(int* dst) = 0;  
+	int* getImg(){return img;}
 	int getWidth(){return width;}
 	int getHeight(){return height;}
 	static void initCuda(){
@@ -28,16 +28,16 @@ public:
 	}
 protected:
 	Filter* another;
-	unsigned char* img;
+	int* img;
 	int width;      
 	int height; 
 };
 
 class SobelFilter : public Filter{
 public:
-	SobelFilter(unsigned char* img, int width, int height);
+	SobelFilter(int* img, int width, int height);
 	SobelFilter(Filter* another);
-	void filter(unsigned char* dst);
+	void filter(int* dst);
 };
 
 #endif

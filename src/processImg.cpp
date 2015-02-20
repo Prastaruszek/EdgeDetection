@@ -1,7 +1,7 @@
 #include <iostream>
 #include "filters.h"
 
-void process(unsigned char* src, unsigned char* dst, int width, int height){
+void process(int* src, int* dst, int width, int height){
 	std::cout << "COPYING" << std::endl;
 	Filter::initCuda();
 	SobelFilter sf(src,width,height);

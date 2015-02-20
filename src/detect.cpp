@@ -1,8 +1,8 @@
+#include <ctime>
 #include "CImg.h"
-
 using namespace cimg_library;
 
-void process(unsigned char* src, unsigned char* dst, int width, int height);
+void process(int* src, int* dst, int width, int height);
 
 template<typename T>
 void displayMeOnTheScreen(CImg<T> image){
@@ -11,7 +11,7 @@ void displayMeOnTheScreen(CImg<T> image){
 	main_disp.wait();
 }
 
-void getGrayscaleImage(CImg<unsigned char>& image, unsigned char* grayscale){
+void getGrayscaleImage(CImg<unsigned char>& image, int* grayscale){
 	int size = image.size()/image.spectrum();
 	if(image.spectrum()==1){
 		unsigned char* gray = image.data(0,0,0,0);
@@ -32,8 +32,14 @@ void getGrayscaleImage(CImg<unsigned char>& image, unsigned char* grayscale){
 		}		
 	}
 }
+void compress(unsigned char* dst_char, int* dst, int size){
+	for(int i=0; i<size; ++i){
+		dst_char[i]=dst[i];
+	}
+}
 int main(int argc, char* argv[]) {
 	char img[50]; 
+	clock_t timer;
 	if(argc>1){
 		strncpy(img, "images/", 50);
 		strncpy(img+7, argv[1], 43);
@@ -46,10 +52,15 @@ int main(int argc, char* argv[]) {
 				image.width(), image.height(), image.depth(),
 								image.size(), image.spectrum());
 	int size = image.size()/image.spectrum();
-	unsigned char grayscale[size];
-	unsigned char dst[size];
+	int grayscale[size];
+	int dst[size];
+	unsigned char dst_char[size];
 	getGrayscaleImage(image, grayscale);
+	timer=clock();
 	process(grayscale, dst, image.width(), image.height());
+	timer=clock()-timer;
+	printf("TIME PROCESSING IMAGE: %f\n sec", (float)timer/CLOCKS_PER_SEC);
+	compress(dst_char, dst, size);
 	CImg<unsigned char> outImg(dst, image.width(), image.height(),
 									image.depth(), 1);
 	displayMeOnTheScreen(outImg);
