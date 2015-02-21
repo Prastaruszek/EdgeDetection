@@ -1,112 +1,121 @@
 #include<cstdio>
+#define S 64
+#define ZERO 0
 
 extern "C" {
 
-__global__
-void sobelAndSuppression(int* src, int* dst){
 
-	__shared__ int cache[32][33];
-	int m = gridDim.x*32;
-    int th_x = blockIdx.x * 32 + threadIdx.x;
-	int th_y = blockIdx.y * 32 + threadIdx.y;
-	int i_src = th_y*m + th_x;
-	cache[threadIdx.y][threadIdx.x] = src[i_src];
-    __syncthreads();
-    th_x = blockIdx.y * 32 + threadIdx.x;
-	th_y = blockIdx.x * 32 + threadIdx.y;
-    m = gridDim.y*32;
-    int i_dst = th_y*m+th_x;
-    dst[i_dst] = cache[threadIdx.x][threadIdx.y]; 
- 
+
+__device__
+bool btwn(int a, int x, int y){
+	return (a>=x && a<y);
 }
 
-
-__global__
-void transpose_char(int* src, int* dst){
-
-	__shared__ int cache[32][33];
-	int m = gridDim.x*32;
-    int th_x = blockIdx.x * 32 + threadIdx.x;
-	int th_y = blockIdx.y * 32 + threadIdx.y;
-	int i_src = th_y*m + th_x;
-	cache[threadIdx.y][threadIdx.x] = src[i_src];
-    __syncthreads();
-    th_x = blockIdx.y * 32 + threadIdx.x;
-	th_y = blockIdx.x * 32 + threadIdx.y;
-    m = gridDim.y*32;
-    int i_dst = th_y*m+th_x;
-    dst[i_dst] = cache[threadIdx.x][threadIdx.y]; 
- 
-}
-__global__
-void transpose_short(int* src, int* dst){
-	//printf("WE R IN)");
-	__shared__ int cache[32][33];
-	int m = gridDim.x*32;
-    int th_x = blockIdx.x * 32 + threadIdx.x;
-	int th_y = blockIdx.y * 32 + threadIdx.y;
-	int i_src = th_y*m + th_x;
-	cache[threadIdx.y][threadIdx.x] = src[i_src];
-    __syncthreads();
-    th_x = blockIdx.y * 32 + threadIdx.x;
-	th_y = blockIdx.x * 32 + threadIdx.y;
-    m = gridDim.y*32;
-    int i_dst = th_y*m+th_x;
-    dst[i_dst] = cache[threadIdx.x][threadIdx.y]; 
- 
-}
-
-__global__
-void oneDimSobel(int* src, int *dst, int*N){
-	int n = N[0]; // width
-	int m = N[1]; // height
-	int SIZE = n*m;
-	int th_x = blockIdx.x*1024+threadIdx.x;
-	if(th_x < n){
-		int prev = src[th_x];
-		int next=-1;
-		for(int i=th_x+n; i<SIZE; i+=n){
-			next = src[i];
-			int temp = next-prev;
-			temp = temp>=0?temp:-temp;
-			dst[i] = temp;
-			prev = next; 
+__device__
+void load_to_shared(int* src, int cache[][S], int th_x, int th_y, int n, int m){
+	int val, pos, ind_x, ind_y;
+	if(threadIdx.x==0 && threadIdx.y==0){
+		ind_x = th_x-1; ind_y = th_y-1;
+		if(btwn(ind_x, 0, m) && btwn(ind_y, 0, n)){
+			pos = ind_y*m + ind_x;
+			val = src[pos];
 		}
+		cache[threadIdx.y][threadIdx.x] = val;
+	}
+	
+	if(threadIdx.x==0 && threadIdx.y==31){
+		ind_x = th_x-1; ind_y = th_y+1;
+		if(btwn(ind_x, 0, m) && btwn(ind_y, 0, n)){
+			pos = ind_y*m + ind_x;
+			val = src[pos];
+		}
+		cache[threadIdx.y+2][threadIdx.x] = val;
+	}
+	
+	if(threadIdx.x==31 && threadIdx.y==0){
+		ind_x = th_x+1; ind_y = th_y-1;
+		if(btwn(ind_x, 0, m) && btwn(ind_y, 0, n)){
+			pos = ind_y*m + ind_x;
+			val = src[pos];
+		}
+		cache[threadIdx.y][threadIdx.x+2] = val;
+	}
+	
+	if(threadIdx.x==31 && threadIdx.y==31){
+		ind_x = th_x+1; ind_y = th_y-1;
+		if(btwn(ind_x, 0, m) && btwn(ind_y, 0, n)){
+			pos = ind_y*m + ind_x;
+			val = src[pos];
+		}
+		cache[threadIdx.y+2][threadIdx.x+2] = val;
+	}
+
+	if(threadIdx.y==0){
+		ind_x = th_x; ind_y = th_y-1; val=ZERO;
+		if(btwn(ind_x, 0, m) && btwn(ind_y, 0, n)){
+			pos = ind_y*m + ind_x;
+			val = src[pos];
+		}
+		cache[threadIdx.y][threadIdx.x+1] = val;
+	}
+
+	if(threadIdx.y==31){
+		ind_x = th_x; ind_y = th_y+1; val=ZERO;
+		if(btwn(ind_x, 0, m) && btwn(ind_y, 0, n)){
+			pos = ind_y*m + ind_x;
+			val = src[pos];
+		}
+		cache[threadIdx.y+2][threadIdx.x+1] = val;
+	}
+	
+	if(threadIdx.x==0){
+		ind_x = th_x-1; ind_y = th_y; val=ZERO;
+		if(btwn(ind_x, 0, m) && btwn(ind_y, 0, n)){
+			pos = ind_y*m + ind_x;
+			val = src[pos];
+		}
+	 	cache[threadIdx.y+1][threadIdx.x] = val;
+	}
+
+	if(threadIdx.x==31){
+		ind_x = th_x+1; ind_y = th_y; val=ZERO;
+		if(btwn(ind_x, 0, m) && btwn(ind_y, 0, n)){
+			pos = ind_y*m + ind_x;
+			val = src[pos];
+		}
+	 	cache[threadIdx.y+1][threadIdx.x+2] = val;
 	}
 }
+
 __global__
-void sobelPlus(int* A, int* B, int* dst){
+void sobelAndSuppression(int* src, int* dst_magn){
+	__shared__ int cache[34][S];
 	int m = gridDim.x*32;
+	int n = gridDim.y*32;
     int th_x = blockIdx.x * 32 + threadIdx.x;
 	int th_y = blockIdx.y * 32 + threadIdx.y;
-	//TU MOZE BYC WOLNO
-	int pos = th_y*m+th_x;
-	dst[pos] = (A[pos]+B[pos]>20?255:0);
-}
-/*__global__
-void columning(int* cc, int* bitmap, int* N, int* myBool){
-	int n =  *N;
-	int SIZE =  n * n;
-    int th_x = blockIdx.x * 1024 + threadIdx.x;
-	//printf("thx = %d\n", th_x);
-	if(th_x < n){
-		int i = th_x+n;
-		//printf("nums %d %d\n", i, i-n);
-		for(i = th_x+n; i<SIZE; i+=n){
-			if(bitmap[i]==bitmap[i-n] && cc[i-n]<cc[i]){
-				cc[i] = cc[i-n];
-				*myBool = 1;
-			}
-		}
-		i-=n;
-		for(i = i-n ;i>=0; i-=n){
-			if(bitmap[i]==bitmap[i+n] && cc[i+n]<cc[i]){
-				cc[i]=cc[i+n];
-				*myBool = 1;
-			}
-		}
+	int i_src = th_y*m + th_x;
+	int ind_x, ind_y;
+
+	/*now we load to share with a frame of thickness eq 1*/
+	cache[threadIdx.y+1][threadIdx.x+1] = src[i_src];
+	load_to_shared(src, cache, th_x, th_y, n, m);
+
+	ind_y = threadIdx.y+1; ind_x = threadIdx.x+1; //it's correct position
+	int mag_x;
+	int mag_y;
+	__syncthreads();
+	mag_x = cache[ind_y][ind_x-1] - cache[ind_y][ind_x+1];
+	int magAbs_x = ((mag_x>0)?mag_x:-mag_x);
+	mag_y = cache[ind_y+1][ind_x] - cache[ind_y-1][ind_x];
+	int magAbs_y = ((mag_y>0)?mag_y:-mag_y);
+	dst_magn[i_src] = magAbs_x+magAbs_y;
+	if(threadIdx.x==0 && threadIdx.y==0){
+		printf("%d\n", dst_magn[i_src]);
+	
 	}
-}*/
+}
+
 }
 
 
