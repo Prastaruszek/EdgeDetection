@@ -254,4 +254,13 @@ void final_battle(int* src){
 	}
 }
 
+__global__
+void gaussianFilter(int * src, int * dest) {
+	int m = gridDim.x*32;
+    int th_x = blockIdx.x * 32 + threadIdx.x;
+	int th_y = blockIdx.y * 32 + threadIdx.y;
+	int i_src = th_y*m + th_x;
+	
+}
+
 }
