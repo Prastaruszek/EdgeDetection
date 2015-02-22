@@ -21,8 +21,12 @@ void SobelFilter::filter(int* dst){
 		exit(1); 
 	} 
 	
-	CUfunction sobelAndSuppression;
+	CUfunction sobelAndSuppression, nonMaximalSupression;
 	if (cuModuleGetFunction(&sobelAndSuppression, cuModule, "sobelAndSuppression") != CUDA_SUCCESS){
+        exit(1);
+    }
+    
+    if (cuModuleGetFunction(&nonMaximalSupression, cuModule, "nonMaximalSupression") != CUDA_SUCCESS){
         exit(1);
     }
     
@@ -31,24 +35,33 @@ void SobelFilter::filter(int* dst){
     
     CUdeviceptr cuSrc;
     CUdeviceptr cuDst;
+    CUdeviceptr cuTanges;
+    CUdeviceptr cuDstMaximalSupression;
     if (cuMemAlloc(&cuSrc, SIZE * sizeof(int)) != CUDA_SUCCESS) { exit(-1); }
     if (cuMemAlloc(&cuDst, SIZE * sizeof(int)) != CUDA_SUCCESS) { exit(-1); }
+    if (cuMemAlloc(&cuTanges, SIZE * sizeof(float)) != CUDA_SUCCESS) { exit(-1); }
+    if (cuMemAlloc(&cuDstMaximalSupression, SIZE*sizeof(int)) != CUDA_SUCCESS) {exit(-1);}
     cuMemcpyHtoD(cuSrc, img ,SIZE*sizeof(int));
-    
+
     int BASIC_SIZE = 32;
     int blocks_per_grid_x = (height/BASIC_SIZE);
 	int blocks_per_grid_y = (width/BASIC_SIZE);
 	int threads_per_block_x = BASIC_SIZE;
 	int threads_per_block_y = BASIC_SIZE;
 	
-	void* args[2] = {&cuSrc, &cuDst };
-    if( cuLaunchKernel(sobelAndSuppression, blocks_per_grid_y, blocks_per_grid_x, 1,
-		threads_per_block_y, threads_per_block_x, 1, 0, 0, args, 0)!= CUDA_SUCCESS){
+	void* args[3] = {&cuSrc, &cuDst, &cuTanges};
+    if (cuLaunchKernel(sobelAndSuppression, blocks_per_grid_y, blocks_per_grid_x, 1,
+		threads_per_block_y, threads_per_block_x, 1, 0, 0, args, 0)!= CUDA_SUCCESS) {
 			exit(-1);
 	}
 	cuCtxSynchronize();	
-	
-	cuMemcpyDtoH(dst, cuDst , SIZE*sizeof(int));	
+	void* args1[3] = {&cuDst, &cuTanges, &cuDstMaximalSupression};
+	if (cuLaunchKernel(nonMaximalSupression, blocks_per_grid_y, blocks_per_grid_x, 1,
+		threads_per_block_y, threads_per_block_x, 1, 0, 0, args1, 0)!= CUDA_SUCCESS) {
+			exit(-1);
+	}
+	cuCtxSynchronize();
+	cuMemcpyDtoH(dst, cuDstMaximalSupression , SIZE*sizeof(int));	
 	
 	cuMemHostUnregister	((void*) img);
 	cuMemHostUnregister	((void*) dst);	
