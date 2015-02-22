@@ -136,7 +136,7 @@ void nonMaximalSupression(int * magn, float * tanges, int * dest) {
 	ind_y = threadIdx.y+1; ind_x = threadIdx.x+1; 
 	__syncthreads();
     float angle = tanges[i_src];
-    if (angle < 0) angle = 180 + angle;
+    if (angle < 0) angle = 360 + angle;
     //north && south
     int centerCell = cacheMagn[ind_y][ind_x];
     dest[i_src] = centerCell;
