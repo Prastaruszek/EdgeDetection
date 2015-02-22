@@ -112,14 +112,11 @@ void sobelAndSuppression(int* src, int* dst_magni, float * tangesOut){
 	dst_magni[i_src] = magAbs_x+magAbs_y;
 	//dst_magni[i_src] = (magAbs_x+magAbs_y)>32?255:0;
 	tangesOut[i_src] = atan2((float) mag_y,(float) mag_x)*180/PI;
-	if(threadIdx.x==0 && threadIdx.y==0){
-		printf("Magnitude=%d x=%f angle=%f\n", dst_magni[i_src], ((float) mag_x)/((float) mag_y), tangesOut[i_src]);
-	}
 }
 
 __global__
 void nonMaximalSupression(int * magn, float * tanges, int * dest) {
-	__shared__ int cacheMagn[34][S], cacheTanges[34][S];
+	__shared__ int cacheMagn[34][S];
 	int m = gridDim.x*32;
 	int n = gridDim.y*32;
     int th_x = blockIdx.x * 32 + threadIdx.x;
