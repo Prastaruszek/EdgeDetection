@@ -2,8 +2,8 @@
 #define S 64
 #define ZERO 0
 #define PI 3.14159265
-#define LOW 32
-#define HIGH 64
+#define LOW 16
+#define HIGH 32
 #define QUEUE_SIZE 128
 extern "C" {
 __device__
@@ -238,6 +238,20 @@ void oneBfs(int* src, int* dst, int* changed){
 	__syncthreads();
 	dst[i_src] = cache[ind_y][ind_x];
 	
+}
+__global__ 
+void final_battle(int* src){
+	int m = gridDim.x*32;
+    int th_x = blockIdx.x * 32 + threadIdx.x;
+	int th_y = blockIdx.y * 32 + threadIdx.y;
+	int i_src = th_y*m + th_x;
+	int val = src[i_src];
+	if(val==-2){
+		src[i_src] = 255;
+	}
+	else{
+		src[i_src] = 0;
+	}
 }
 
 }
