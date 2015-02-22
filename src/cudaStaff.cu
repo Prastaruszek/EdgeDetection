@@ -2,6 +2,9 @@
 #define S 64
 #define ZERO 0
 #define PI 3.14159265
+#define LOW 32
+#define HIGH 64
+#define QUEUE_SIZE 128
 extern "C" {
 __device__
 bool btwn(int a, int x, int y){
@@ -163,5 +166,78 @@ void nonMaximalSupression(int * magn, float * tanges, int * dest) {
     }
 
 }	
+
+__global__
+void oneBfs(int* src, int* dst, int* changed){
+	__shared__ int cache[34][S];
+	int m = gridDim.x*32;
+	int n = gridDim.y*32;
+    int th_x = blockIdx.x * 32 + threadIdx.x;
+	int th_y = blockIdx.y * 32 + threadIdx.y;
+	int i_src = th_y*m + th_x;
+	cache[threadIdx.y+1][threadIdx.x+1] = src[i_src];
+	load_to_shared(src, cache, th_x, th_y, n, m);
+	//we can proceed
+	int ind_y = threadIdx.y+1;
+	int ind_x = threadIdx.x+1; //it's correct position
+	//tu moze dochodzic do malych runtime errorow, jesli rozmiar bedzie za maly
+	int queue[QUEUE_SIZE];
+	int beg=0, end=0;
+	int val = cache[ind_y][ind_x];
+	if(val!=0 && val!=-1 && val!=-2){
+		if(val < LOW){
+			val=(cache[ind_y][ind_x]=0);
+		}
+		else if(val >= HIGH){
+			val=(cache[ind_y][ind_x]=-2);
+		}
+		else{
+			val=(cache[ind_y][ind_x]=-1);
+		}
+		*changed=1;
+	}
+	__syncthreads();
+	int procInd_x;
+	int procInd_y;
+	if(val==-1){
+		for(int i=-1; i<2; ++i){
+			for(int j=-1; j<2; ++j){
+				procInd_x = ind_x+i;
+				procInd_y = ind_y+j;
+				if(cache[procInd_y][procInd_x]==-2){
+					//two values are near
+					queue[end++] = ind_y;
+					queue[end++] = ind_x;
+					cache[ind_y][ind_x]=-2;
+					*changed=1;
+				}
+			}
+		}
+	}
+	int x_new;
+	int y_new;
+	
+	
+	while(beg!=end){
+		procInd_y = queue[beg++];
+		procInd_x = queue[beg++];
+		for(int i=-1; i<2; ++i){
+			for(int j=-1; j<2; ++j){
+				x_new = procInd_x+i;
+				y_new = procInd_y+j;
+				if(cache[y_new][x_new]==-1 && btwn(y_new, 1, 33) 
+											&& btwn(x_new, 1, 33)){
+					//two values are near
+					queue[end++] = y_new;
+					queue[end++] = x_new;
+					cache[y_new][x_new]=-2;
+				}
+			}
+		}
+	}
+	__syncthreads();
+	dst[i_src] = cache[ind_y][ind_x];
+	
+}
 
 }

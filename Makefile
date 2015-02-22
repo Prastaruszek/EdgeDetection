@@ -23,8 +23,8 @@ CFLAGS += $(COMMONFLAGS) -O2 -L/usr/X11R6/lib -lm -lpthread -lX11 -std=c++11 -L/
 
 all:  detect
 
-detect: obj/detect.o obj/processImg.o obj/SobelFilter.o obj/cudaStaff.ptx
-	$(LINK) obj/detect.o obj/processImg.o obj/SobelFilter.o  -o detect  $(CXXFLAGS)
+detect: obj/detect.o obj/processImg.o obj/bfs.o obj/SobelFilter.o obj/cudaStaff.ptx
+	$(LINK) obj/detect.o obj/processImg.o obj/SobelFilter.o obj/bfs.o  -o detect  $(CXXFLAGS)
 
 obj/detect.o: src/detect.cpp src/CImg.h
 	$(CXX) -c src/detect.cpp $(CFLAGS) -o obj/detect.o
@@ -33,7 +33,10 @@ obj/processImg.o: src/processImg.cpp src/CImg.h
 	$(CXX) -c src/processImg.cpp $(CFLAGS) -o obj/processImg.o
 
 obj/SobelFilter.o: src/SobelFilter.cpp src/filters.h
-	$(CXX) -c src/SobelFilter.cpp  $(CFLAGS) -o obj/SobelFilter.o	
+	$(CXX) -c src/SobelFilter.cpp  $(CFLAGS) -o obj/SobelFilter.o
+	
+obj/bfs.o: src/bfs.cpp
+	$(CXX) -c src/bfs.cpp  $(CFLAGS) -o obj/bfs.o
 
 obj/cudaStaff.ptx: src/cudaStaff.cu
 	$(NVCC) $(NVCCFLAGS) src/cudaStaff.cu -o obj/cudaStaff.ptx
