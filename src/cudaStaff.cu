@@ -135,30 +135,30 @@ void nonMaximalSupression(int * magn, float * tanges, int * dest) {
     float angle = tanges[i_src];
     if (angle < 0) angle = 360 + angle;
     //north && south
-    int centerCell = cacheMagn[threadIdx.y][threadIdx.x];
+    int centerCell = cacheMagn[ind_y][ind_x];
     dest[i_src] = centerCell;
     if ((337.5 <= angle && angle < 22.5) || 
             (157.25 <= angle && angle < 202.5)) {
-        if (cacheMagn[threadIdx.y+1][threadIdx.x] > centerCell && 
-                cacheMagn[threadIdx.y-1][threadIdx.x] > centerCell) 
+        if (cacheMagn[ind_y+1][ind_x] > centerCell || 
+                cacheMagn[ind_y-1][ind_x] > centerCell) 
                     dest[i_src] = 0;
     } // north-east && south-west 
     else if ((22.5 <= angle && angle < 67.5) ||
             (202.5 <= angle && angle < 247.5)) {
-        if (cacheMagn[threadIdx.y+1][threadIdx.x+1] > centerCell && 
-                cacheMagn[threadIdx.y-1][threadIdx.x-1] > centerCell) 
+        if (cacheMagn[ind_y+1][ind_x+1] > centerCell || 
+                cacheMagn[ind_y-1][ind_x-1] > centerCell) 
                     dest[i_src] = 0;
     } // west && east
     else if ((67.5 <= angle && angle < 112.5) ||
                 (247.5 <= angle && angle < 292.5)) {
-        if (cacheMagn[threadIdx.y][threadIdx.x+1] > centerCell && 
-                cacheMagn[threadIdx.y][threadIdx.x-1] > centerCell) 
+        if (cacheMagn[ind_y][ind_x+1] > centerCell || 
+                cacheMagn[ind_y][ind_x-1] > centerCell) 
                     dest[i_src] = 0;
     } // west-north && east-south
     else if ((112.5 <= angle && angle < 157.5) ||
-        (292.5 <= angle && angle < 337.5)) {
-        if (cacheMagn[threadIdx.y-1][threadIdx.x+1] > centerCell && 
-                cacheMagn[threadIdx.y+1][threadIdx.x-1] > centerCell) 
+        (292.5 <= angle || angle < 337.5)) {
+        if (cacheMagn[ind_y-1][ind_x+1] > centerCell || 
+                cacheMagn[ind_y+1][ind_x-1] > centerCell) 
                     dest[i_src] = 0;
     }
 
