@@ -5,6 +5,8 @@
 #define LOW 16
 #define HIGH 32
 #define QUEUE_SIZE 128
+#define KERNEL_RADIUS 8
+
 extern "C" {
 __device__
 bool btwn(int a, int x, int y){
@@ -253,11 +255,26 @@ void final_battle(int* src){
 
 __global__
 void gaussianFilter(int * src, int * dest) {
-	int m = gridDim.x*32;
+    __shared__ int cache[34][S];
+    int n = gridDim.y*32;
+    int m = gridDim.x*32;
     int th_x = blockIdx.x * 32 + threadIdx.x;
 	int th_y = blockIdx.y * 32 + threadIdx.y;
 	int i_src = th_y*m + th_x;
-	
+	int ind_y, ind_x;
+	cache[threadIdx.y+1][threadIdx.x+1] = src[i_src];
+	load_to_shared(src, cache, th_x, th_y, n, m);
+
+    ind_y = threadIdx.y+1+KERNEL_RADIUS; ind_x = threadIdx.x+1+KERNEL_RADIUS;
+	__syncthreads();
+
+    int sum = 0;
+    for (int i = -KERNEL_RADIUS; i <= KERNEL_RADIUS; i++) {
+        for (int j = -KERNEL_RADIUS; j <= KERNEL_RADIUS; j++) {
+            sum += cache[ind_y+i][ind_x+j]; //d_kernel[KERNEL_RADIUS + j]
+        }
+    }
+    dest[i_src] = (int) sum;
 }
 
 }
