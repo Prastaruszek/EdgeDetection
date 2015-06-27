@@ -12,20 +12,6 @@ public:
 	int* getImg(){return img;}
 	int getWidth(){return width;}
 	int getHeight(){return height;}
-	static void initCuda(){
-		cuInit(0);
-		CUdevice cuDevice; 
-		CUresult res = cuDeviceGet(&cuDevice, 0);
-		if (res != CUDA_SUCCESS){ 
-			exit(1);
-		}
-
-		CUcontext cuContext;
-		res = cuCtxCreate(&cuContext,0, cuDevice);
-		if (res != CUDA_SUCCESS){
-			exit(1);
-		}
-	}
 protected:
 	Filter* another;
 	int* img;
@@ -33,11 +19,6 @@ protected:
 	int height; 
 };
 
-class SobelFilter : public Filter{
-public:
-	SobelFilter(int* img, int width, int height);
-	SobelFilter(Filter* another);
-	void filter(int* dst);
-};
+void sobelFilter(int* src, int* dst, int width, int height);
 
 #endif

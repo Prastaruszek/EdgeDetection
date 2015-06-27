@@ -3,12 +3,24 @@
 
 void bfs(int* src, int* dst, int width, int height);
 
-void process(int* src, int* dst, int width, int height){
-	std::cout << "COPYING" << std::endl;
-	Filter::initCuda();
-	SobelFilter sf(src,width,height);
-	Filter& filter = sf;
+void initCuda(){
+		cuInit(0);
+		CUdevice cuDevice; 
+		CUresult res = cuDeviceGet(&cuDevice, 0);
+		if (res != CUDA_SUCCESS){ 
+			exit(1);
+		}
+
+		CUcontext cuContext;
+		res = cuCtxCreate(&cuContext,0, cuDevice);
+		if (res != CUDA_SUCCESS){
+			exit(1);
+		}
+};
+
+void process(int* src , int* dst, int width, int height){
+	initCuda();
 	int middle[width*height];
-	filter.filter(middle);
+	sobelFilter(src, middle, width, height);
 	bfs(middle, dst, width, height);
 }

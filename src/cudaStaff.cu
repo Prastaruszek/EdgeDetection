@@ -2,8 +2,8 @@
 #define S 64
 #define ZERO 0
 #define PI 3.14159265
-#define LOW 16
-#define HIGH 32
+#define LOW 9
+#define HIGH 18
 #define QUEUE_SIZE 128
 #define KERNEL_RADIUS 8
 
@@ -90,52 +90,47 @@ void load_to_shared(int* src, int cache[][S], int th_x, int th_y, int n, int m){
 }
 
 __global__
-void sobelAndSuppression(int* src, int* dst_magni, float * tangesOut){
+void sobel(int* src, int* dstMagni, float * arcTangensOut){
 	__shared__ int cache[34][S];
-	int m = gridDim.x*32;
-	int n = gridDim.y*32;
-    int th_x = blockIdx.x * 32 + threadIdx.x;
-	int th_y = blockIdx.y * 32 + threadIdx.y;
-	int i_src = th_y*m + th_x;
-	int ind_x, ind_y;
+	int m = gridDim.x*32, n = gridDim.y*32, 
+	th_x = blockIdx.x * 32 + threadIdx.x, 
+	th_y = blockIdx.y * 32 + threadIdx.y,
+	i_src = th_y*m + th_x, ind_x, ind_y,
+	magn_x, magn_y, magnAbs_x, magnAbs_y;
 
-	/*now we load to share with a frame of thickness eq 1*/
+	/*now we load to shared with a frame of thickness eq 1*/
 	cache[threadIdx.y+1][threadIdx.x+1] = src[i_src];
 	load_to_shared(src, cache, th_x, th_y, n, m);
 
-	ind_y = threadIdx.y+1; ind_x = threadIdx.x+1; //it's correct position
-	int mag_x;
-	int mag_y;
+	ind_y = threadIdx.y+1; 
+	ind_x = threadIdx.x+1; 
 	__syncthreads();
-	mag_x = cache[ind_y][ind_x-1] - cache[ind_y][ind_x+1];
-	int magAbs_x = ((mag_x>0)?mag_x:-mag_x);
-	mag_y = cache[ind_y+1][ind_x] - cache[ind_y-1][ind_x];
-	int magAbs_y = ((mag_y>0)?mag_y:-mag_y);
-	dst_magni[i_src] = magAbs_x+magAbs_y;
-	//dst_magni[i_src] = (magAbs_x+magAbs_y)>32?255:0;
-	tangesOut[i_src] = atan2((float) mag_y,(float) mag_x)*180/PI;
+	magn_x = cache[ind_y][ind_x-1] - cache[ind_y][ind_x+1];
+	magnAbs_x = ((magn_x>0) ? magn_x : -magn_x);
+	magn_y = cache[ind_y+1][ind_x] - cache[ind_y-1][ind_x];
+	magnAbs_y = ((magn_y>0) ? magn_y : -magn_y);
+	dstMagni[i_src] = magnAbs_x + magnAbs_y;
+	arcTangensOut[i_src] = atan2((float) magn_y,(float) magn_x)
+										* 180 / PI;
 }
 
 __global__
-void nonMaximalSupression(int * magn, float * tanges, int * dest) {
+void nonMaximalSupression(int * magn, float * arcTangens, int * dest) {
 	__shared__ int cacheMagn[34][S];
-	int m = gridDim.x*32;
-	int n = gridDim.y*32;
-    int th_x = blockIdx.x * 32 + threadIdx.x;
-	int th_y = blockIdx.y * 32 + threadIdx.y;
-	int i_src = th_y*m + th_x;
-	int ind_x, ind_y;
+	int m = gridDim.x*32, n = gridDim.y*32,
+	th_x = blockIdx.x * 32 + threadIdx.x, 
+	th_y = blockIdx.y * 32 + threadIdx.y,
+	i_src = th_y*m + th_x, ind_x, ind_y;
+	float angle;
 
 	cacheMagn[threadIdx.y+1][threadIdx.x+1] = magn[i_src];
 	load_to_shared(magn, cacheMagn, th_x, th_y, n, m);
-    
-    //cacheTanges[threadIdx.y+1][threadIdx.x+1] = tanges[i_src];
-    //load_to_shared(tanges, cacheTanges, th_x, th_y, n, m);
 
 	ind_y = threadIdx.y+1; ind_x = threadIdx.x+1; 
 	__syncthreads();
-    float angle = tanges[i_src];
+   angle = arcTangens[i_src];
     if (angle < 0) angle = 360 + angle;
+    
     //north && south
     int centerCell = cacheMagn[ind_y][ind_x];
     dest[i_src] = centerCell;
@@ -167,56 +162,57 @@ void nonMaximalSupression(int * magn, float * tanges, int * dest) {
 }	
 
 __global__
-void oneBfs(int* src, int* dst, int* changed){
-	__shared__ int cache[34][S];
+void prepareBfs(int* src){
 	int m = gridDim.x*32;
-	int n = gridDim.y*32;
-    int th_x = blockIdx.x * 32 + threadIdx.x;
+	int th_x = blockIdx.x * 32 + threadIdx.x;
 	int th_y = blockIdx.y * 32 + threadIdx.y;
 	int i_src = th_y*m + th_x;
-	cache[threadIdx.y+1][threadIdx.x+1] = src[i_src];
-	load_to_shared(src, cache, th_x, th_y, n, m);
-	//we can proceed
-	int ind_y = threadIdx.y+1;
-	int ind_x = threadIdx.x+1; //it's correct position
-	//tu moze dochodzic do malych runtime errorow, jesli rozmiar bedzie za maly
-	int queue[QUEUE_SIZE];
-	int beg=0, end=0;
-	int val = cache[ind_y][ind_x];
-	if(val!=0 && val!=-1 && val!=-2){
-		if(val < LOW){
-			val=(cache[ind_y][ind_x]=0);
-		}
-		else if(val >= HIGH){
-			val=(cache[ind_y][ind_x]=-2);
-		}
-		else{
-			val=(cache[ind_y][ind_x]=-1);
-		}
-		*changed=1;
+	int val = src[i_src];
+	if(val < LOW){
+		src[i_src] = 0;
 	}
+	else if(val >= HIGH){
+		src[i_src] = -2;
+	}
+	else{
+		src[i_src] = -1;
+	}
+
+}
+__global__
+void oneBfs(int* src, int* dst, int* changed){
+	__shared__ int cache[34][S];
+	int m = gridDim.x*32, n = gridDim.y*32,
+	th_x = blockIdx.x * 32 + threadIdx.x,
+	th_y = blockIdx.y * 32 + threadIdx.y,
+	i_src = th_y*m + th_x,
+	ind_y = threadIdx.y+1, ind_x = threadIdx.x+1,
+	queue[QUEUE_SIZE],
+	beg=0, end=0, val,
+	procInd_x, procInd_y, x_new, y_new;
+	cache[threadIdx.y+1][threadIdx.x+1] = src[i_src];
+	val = cache[ind_y][ind_x];
+	load_to_shared(src, cache, th_x, th_y, n, m);
 	__syncthreads();
-	int procInd_x;
-	int procInd_y;
+	
 	if(val==-1){
 		for(int i=-1; i<2; ++i){
 			for(int j=-1; j<2; ++j){
 				procInd_x = ind_x+i;
 				procInd_y = ind_y+j;
 				if(cache[procInd_y][procInd_x]==-2){
-					//two values are near
 					queue[end++] = ind_y;
 					queue[end++] = ind_x;
 					cache[ind_y][ind_x]=-2;
 					*changed=1;
+					i=2;
+					j=2;
 				}
 			}
 		}
 	}
-	int x_new;
-	int y_new;
 	
-	
+
 	while(beg!=end){
 		procInd_y = queue[beg++];
 		procInd_x = queue[beg++];
@@ -226,7 +222,6 @@ void oneBfs(int* src, int* dst, int* changed){
 				y_new = procInd_y+j;
 				if(cache[y_new][x_new]==-1 && btwn(y_new, 1, 33) 
 											&& btwn(x_new, 1, 33)){
-					//two values are near
 					queue[end++] = y_new;
 					queue[end++] = x_new;
 					cache[y_new][x_new]=-2;

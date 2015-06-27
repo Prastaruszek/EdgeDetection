@@ -13,10 +13,11 @@ void displayMeOnTheScreen(CImg<T> image){
 
 void getGrayscaleImage(CImg<unsigned char>& image, int* grayscale){
 	int size = image.size()/image.spectrum();
+	unsigned char tempGrayscale[size];
 	if(image.spectrum()==1){
 		unsigned char* gray = image.data(0,0,0,0);
 		for(int i=0; i<image.size(); ++i){
-			grayscale[i]= gray[i];
+			tempGrayscale[i]= gray[i];
 		}
 	}
 	else if(image.spectrum()==3){
@@ -27,14 +28,33 @@ void getGrayscaleImage(CImg<unsigned char>& image, int* grayscale){
 		printf("colors have their own line in mem: %lu %lu %lu\n",
 								red-red, grey-red, blue-red);
 		for(int i=0; i<size; ++i){
-			grayscale[i] = round(0.299*((double)red[i]) 
+			tempGrayscale[i] = round(0.299*((double)red[i]) 
 			+ 0.587*((double)grey[i]) + 0.114*((double)blue[i]));
 		}		
 	}
+	CImg<unsigned char> temp(tempGrayscale, image.height(), image.width(), 
+												image.depth(), 1);
+	temp.blur(1);
+	unsigned char* gray = temp.data(0,0,0,0);
+	for(int i=0; i<size; ++i){
+		grayscale[i] = gray[i];
+	}
+	
 }
 void compress(unsigned char* dst_char, int* dst, int size){
 	for(int i=0; i<size; ++i){
 		dst_char[i]=dst[i];
+		
+	}
+}
+void finish(unsigned char * process, int size, int width, int height){
+	for(int i=0; i<width; ++i){
+		process[i] = 0;
+		process[(height-1)*width+i] = 0;
+	}
+	for(int i=0; i<height; ++i){
+		process[i*width] = 0;
+		process[(i+1)*width-1] = 0;
 	}
 }
 int main(int argc, char* argv[]) {
@@ -48,6 +68,7 @@ int main(int argc, char* argv[]) {
 		strncpy(img, "images/lady_color.bmp", 50);
 	}
 	CImg<unsigned char> image(img);
+	//image.blur(1);
 	printf("width=%d hight=%d depth=%d size=%lu spectrum=%d\n",
 				image.width(), image.height(), image.depth(),
 								image.size(), image.spectrum());
@@ -55,14 +76,21 @@ int main(int argc, char* argv[]) {
 	int grayscale[size];
 	int dst[size];
 	unsigned char dst_char[size];
-	getGrayscaleImage(image, grayscale);
+	
 	timer=clock();
+	
+	getGrayscaleImage(image, grayscale);
+	
 	process(grayscale, dst, image.width(), image.height());
+	
 	timer=clock()-timer;
-	printf("TIME PROCESSING IMAGE: %f\n sec", (float)timer/CLOCKS_PER_SEC);
+	
 	compress(dst_char, dst, size);
-	CImg<unsigned char> outImg(dst, image.width(), image.height(),
+	finish(dst_char, size, image.width(), image.height());
+	printf("TIME PROCESSING IMAGE: %f\n sec", (float)timer/CLOCKS_PER_SEC);
+	CImg<unsigned char> outImg(dst_char, image.width(), image.height(),
 									image.depth(), 1);
 	displayMeOnTheScreen(outImg);
+	outImg.save("dst/lady.bmp");
 	return 0;
 }
