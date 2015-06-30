@@ -1,5 +1,11 @@
 #include <ctime>
 #include "CImg.h"
+#include <iostream>
+#include <vector>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
 using namespace cimg_library;
 
 void process(int* src, int* dst, int width, int height);
@@ -11,36 +17,6 @@ void displayMeOnTheScreen(CImg<T> image){
 	main_disp.wait();
 }
 
-void getGrayscaleImage(CImg<unsigned char>& image, int* grayscale){
-	int size = image.size()/image.spectrum();
-	unsigned char tempGrayscale[size];
-	if(image.spectrum()==1){
-		unsigned char* gray = image.data(0,0,0,0);
-		for(int i=0; i<image.size(); ++i){
-			tempGrayscale[i]= gray[i];
-		}
-	}
-	else if(image.spectrum()==3){
-		//to mozna zrobic w cudzie, jest to dosc trywialne, ale poki co zostawmy
-		unsigned char* red = image.data(0,0,0,0);
-		unsigned char* grey = image.data(0,0,0,1);
-		unsigned char* blue = image.data(0,0,0,2);
-		printf("colors have their own line in mem: %lu %lu %lu\n",
-								red-red, grey-red, blue-red);
-		for(int i=0; i<size; ++i){
-			tempGrayscale[i] = round(0.299*((double)red[i]) 
-			+ 0.587*((double)grey[i]) + 0.114*((double)blue[i]));
-		}		
-	}
-	CImg<unsigned char> temp(tempGrayscale, image.height(), image.width(), 
-												image.depth(), 1);
-	temp.blur(1);
-	unsigned char* gray = temp.data(0,0,0,0);
-	for(int i=0; i<size; ++i){
-		grayscale[i] = gray[i];
-	}
-	
-}
 void compress(unsigned char* dst_char, int* dst, int size){
 	for(int i=0; i<size; ++i){
 		dst_char[i]=dst[i];
@@ -67,30 +43,38 @@ int main(int argc, char* argv[]) {
 	else{
 		strncpy(img, "images/lady_color.bmp", 50);
 	}
-	CImg<unsigned char> image(img);
-	//image.blur(1);
-	printf("width=%d hight=%d depth=%d size=%lu spectrum=%d\n",
-				image.width(), image.height(), image.depth(),
-								image.size(), image.spectrum());
-	int size = image.size()/image.spectrum();
-	int grayscale[size];
-	int dst[size];
-	unsigned char dst_char[size];
 	
-	timer=clock();
+	cv::Mat image = cv::imread(img);
+	cv::Mat grayscale, blured;
 	
-	getGrayscaleImage(image, grayscale);
+	cvtColor(image, grayscale, CV_RGB2GRAY);
 	
-	process(grayscale, dst, image.width(), image.height());
+	blur( grayscale, blured, cv::Size(4,4) );
 	
-	timer=clock()-timer;
 	
-	compress(dst_char, dst, size);
-	finish(dst_char, size, image.width(), image.height());
-	printf("TIME PROCESSING IMAGE: %f\n sec", (float)timer/CLOCKS_PER_SEC);
-	CImg<unsigned char> outImg(dst_char, image.width(), image.height(),
-									image.depth(), 1);
-	displayMeOnTheScreen(outImg);
-	outImg.save("dst/lady.bmp");
+	int height = image.rows,
+		width = image.cols;
+	
+	//std::cout  << "height" << height << std::endl;
+	std::vector<int> arr;
+	arr.assign(blured.datastart, blured.dataend);
+	int dst[arr.size()];
+	std::cout << "size = " << arr.size()/512 << std::endl;
+	
+
+	
+	
+	process(arr.data(), dst, height, width);
+	unsigned char mid[arr.size()];
+	for(int i=0; i<arr.size(); ++i){
+		mid[i]=dst[i];
+	}
+	
+	cv::Mat result(height, width, CV_8UC1, mid);
+	cv::imshow("Image", result);
+
+    cv::waitKey(0);
+
+	
 	return 0;
 }

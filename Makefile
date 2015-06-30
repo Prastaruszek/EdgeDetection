@@ -18,7 +18,7 @@ NVCCOPTIONS = -arch sm_20 -ptx
 # Common flags
 COMMONFLAGS += $(INCLUDES)
 NVCCFLAGS += $(COMMONFLAGS) $(NVCCOPTIONS)
-CXXFLAGS += $(COMMONFLAGS) -O2 -L/usr/X11R6/lib -lm -lpthread -lX11 -std=c++11 -lcuda
+CXXFLAGS += $(COMMONFLAGS) -O2 `pkg-config opencv --cflags --libs` -L/usr/X11R6/lib -lm -lpthread -lX11 -std=c++11 -lcuda
 CFLAGS += $(COMMONFLAGS) -O2 -L/usr/X11R6/lib -lm -lpthread -lX11 -std=c++11 -L/usr/local/cuda/lib64 -lcuda -lcudart
 
 all:  detect
